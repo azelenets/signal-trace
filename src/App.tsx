@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  decodeIncomingText,
+  extractCorrelationId,
+  hexPreview,
+  safeJson,
+  validateAgainstSchema,
+  type PayloadFormat,
+  type ProtocolMode,
+  type SimpleSchema,
+} from './lib/trace-utils';
+import {
+  buildSocketIoWsUrl,
+  normalizeSocketIoNamespace,
+  parseSocketIoAuth,
+} from './lib/socketio-utils';
 
 type Direction = 'in' | 'out' | 'sys';
 type LinkState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
-type ProtocolMode = 'auto' | 'raw' | 'socketio';
-type PayloadFormat = 'text' | 'json' | 'binary';
 
 interface TraceMessage {
   id: string;
@@ -15,20 +28,6 @@ interface TraceMessage {
   bytes: number;
   latencyMs?: number;
   protocol: 'raw' | 'socket.io' | 'binary';
-  format: PayloadFormat;
-}
-
-interface SimpleSchema {
-  required?: string[];
-  properties?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
-}
-
-interface DecodedFrame {
-  namespace: string;
-  event: string;
-  payload: string;
-  protocol: 'raw' | 'socket.io';
-  correlationId: string | null;
   format: PayloadFormat;
 }
 
@@ -46,240 +45,24 @@ const fmtTime = (ts: number) =>
     hour12: false,
   }).format(new Date(ts));
 
-const safeJson = (raw: string): Record<string, unknown> | null => {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed === 'object' && parsed !== null) {
-      return parsed as Record<string, unknown>;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-const safeParseArray = (raw: string): unknown[] | null => {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-};
-
 const randomFrom = <T,>(input: readonly T[]): T => input[Math.floor(Math.random() * input.length)];
-
-const extractCorrelationId = (payload: Record<string, unknown> | null): string | null => {
-  if (!payload) return null;
-  const candidate =
-    (typeof payload.responseTo === 'string' && payload.responseTo) ||
-    (typeof payload.replyTo === 'string' && payload.replyTo) ||
-    (typeof payload.requestId === 'string' && payload.requestId) ||
-    (typeof payload.correlationId === 'string' && payload.correlationId) ||
-    (typeof payload.id === 'string' && payload.id) ||
-    null;
-  return candidate;
-};
-
-const decodeRawJsonFrame = (raw: string): DecodedFrame => {
-  const parsed = safeJson(raw);
-  const namespace = typeof parsed?.namespace === 'string' ? parsed.namespace : '/raw';
-  const event = typeof parsed?.event === 'string' ? parsed.event : 'message';
-  return {
-    namespace,
-    event,
-    payload: raw,
-    protocol: 'raw',
-    correlationId: extractCorrelationId(parsed),
-    format: parsed ? 'json' : 'text',
-  };
-};
-
-const decodeSocketIoFrame = (raw: string): DecodedFrame | null => {
-  let packet = raw;
-
-  if (packet === '2') {
-    return { namespace: '/engine', event: 'ping', payload: '{"type":"ping"}', protocol: 'socket.io', correlationId: null, format: 'json' };
-  }
-  if (packet === '3') {
-    return { namespace: '/engine', event: 'pong', payload: '{"type":"pong"}', protocol: 'socket.io', correlationId: null, format: 'json' };
-  }
-
-  if (packet.startsWith('4')) {
-    packet = packet.slice(1);
-  }
-
-  if (packet === '0') {
-    return { namespace: '/socket', event: 'connect', payload: '{"type":"connect"}', protocol: 'socket.io', correlationId: null, format: 'json' };
-  }
-
-  if (packet.startsWith('0{')) {
-    return { namespace: '/engine', event: 'open', payload: packet.slice(1), protocol: 'socket.io', correlationId: null, format: 'json' };
-  }
-
-  if (packet === '40') {
-    return { namespace: '/socket', event: 'connected', payload: '{"type":"connected"}', protocol: 'socket.io', correlationId: null, format: 'json' };
-  }
-
-  if (!(packet.startsWith('42') || packet.startsWith('43'))) {
-    return null;
-  }
-
-  let cursor = 2;
-  let namespace = '/';
-
-  if (packet[cursor] === '/') {
-    const commaIdx = packet.indexOf(',', cursor);
-    if (commaIdx === -1) return null;
-    namespace = packet.slice(cursor, commaIdx);
-    cursor = commaIdx + 1;
-  }
-
-  while (cursor < packet.length && /\d/.test(packet[cursor])) {
-    cursor += 1;
-  }
-
-  const data = packet.slice(cursor);
-  const arr = safeParseArray(data);
-
-  if (packet.startsWith('43')) {
-    return {
-      namespace,
-      event: 'ack',
-      payload: data || '[]',
-      protocol: 'socket.io',
-      correlationId: null,
-      format: arr ? 'json' : 'text',
-    };
-  }
-
-  if (!arr || arr.length === 0) {
-    return null;
-  }
-
-  const eventName = typeof arr[0] === 'string' ? arr[0] : 'event';
-  const payload = arr.length > 1 ? JSON.stringify(arr[1]) : '{}';
-  const parsedPayload = safeJson(payload);
-
-  return {
-    namespace,
-    event: eventName,
-    payload,
-    protocol: 'socket.io',
-    correlationId: extractCorrelationId(parsedPayload),
-    format: parsedPayload ? 'json' : 'text',
-  };
-};
-
-const decodeIncomingText = (raw: string, mode: ProtocolMode): DecodedFrame => {
-  if (mode === 'raw') {
-    return decodeRawJsonFrame(raw);
-  }
-
-  if (mode === 'socketio') {
-    return decodeSocketIoFrame(raw) ?? decodeRawJsonFrame(raw);
-  }
-
-  const socketDecoded = decodeSocketIoFrame(raw);
-  if (socketDecoded) {
-    return socketDecoded;
-  }
-  return decodeRawJsonFrame(raw);
-};
-
-const hexPreview = (bytes: Uint8Array, max = 72): string => {
-  const slice = bytes.slice(0, max);
-  const hex = [...slice].map(v => v.toString(16).padStart(2, '0')).join(' ');
-  const suffix = bytes.length > max ? ` ...(+${bytes.length - max}B)` : '';
-  return `${hex}${suffix}`;
-};
 
 const textEncoder = new TextEncoder();
 
-const validateAgainstSchema = (schema: SimpleSchema, payload: Record<string, unknown>): string[] => {
-  const errors: string[] = [];
+type SchemaValueType = 'string' | 'number' | 'boolean' | 'object' | 'array';
+type SchemaPropertyDraft = { id: string; field: string; type: SchemaValueType; required: boolean };
 
-  if (schema.required) {
-    for (const field of schema.required) {
-      if (!(field in payload)) {
-        errors.push(`Missing required field: ${field}`);
-      }
-    }
+
+const generateMessageId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
   }
-
-  if (schema.properties) {
-    for (const [field, type] of Object.entries(schema.properties)) {
-      if (!(field in payload)) continue;
-      const value = payload[field];
-      const actualType = Array.isArray(value) ? 'array' : typeof value;
-      if (actualType !== type) {
-        errors.push(`Field ${field} expected ${type}, got ${actualType}`);
-      }
-    }
-  }
-
-  return errors;
+  return `trace-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 };
 
-const appSchemaTemplate = JSON.stringify(
-  {
-    required: ['requestId', 'action'],
-    properties: {
-      requestId: 'string',
-      action: 'string',
-      namespace: 'string',
-      value: 'number',
-    },
-  },
-  null,
-  2,
-);
-
-const parseSocketIoAuth = (raw: string): { auth: Record<string, unknown> | null; error: string } => {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return { auth: null, error: '' };
-  }
-
-  try {
-    const parsed = JSON.parse(trimmed) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { auth: null, error: 'Socket.IO auth must be a JSON object.' };
-    }
-    return { auth: parsed as Record<string, unknown>, error: '' };
-  } catch {
-    return { auth: null, error: 'Socket.IO auth must be valid JSON.' };
-  }
-};
-
-const normalizeSocketIoPath = (path: string): string => {
-  const trimmed = path.trim() || '/socket.io';
-  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
-};
-
-const normalizeSocketIoNamespace = (ns: string): string => {
-  const trimmed = ns.trim() || '/';
-  if (trimmed === '/') return '/';
-  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-};
-
-const buildSocketIoWsUrl = (endpoint: string, path: string): string | null => {
-  try {
-    const parsed = new URL(endpoint);
-    if (parsed.protocol === 'http:') parsed.protocol = 'ws:';
-    if (parsed.protocol === 'https:') parsed.protocol = 'wss:';
-    if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
-      return null;
-    }
-
-    parsed.pathname = normalizeSocketIoPath(path);
-    parsed.searchParams.set('EIO', '4');
-    parsed.searchParams.set('transport', 'websocket');
-    return parsed.toString();
-  } catch {
-    return null;
-  }
+const prettyPayload = (payload: string): string => {
+  const parsed = safeJson(payload);
+  return parsed ? JSON.stringify(parsed, null, 2) : payload;
 };
 
 const App = () => {
@@ -290,6 +73,8 @@ const App = () => {
   const replayTimerRef = useRef<number | null>(null);
   const replayCancelRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const socketIoReadyRef = useRef(false);
+  const socketIoConnectSentRef = useRef(false);
 
   const [wsUrl, setWsUrl] = useState(DEFAULT_URL);
   const [connState, setConnState] = useState<LinkState>('DISCONNECTED');
@@ -305,8 +90,18 @@ const App = () => {
   const [socketIoNamespace, setSocketIoNamespace] = useState('/');
   const [socketIoAuth, setSocketIoAuth] = useState('');
   const [socketIoEvent, setSocketIoEvent] = useState('trace');
-  const [schemaText, setSchemaText] = useState(appSchemaTemplate);
+  const [autoRefreshEnvelope, setAutoRefreshEnvelope] = useState(true);
+  const [schemaProperties, setSchemaProperties] = useState<SchemaPropertyDraft[]>([
+    { id: 'schema-0', field: 'requestId', type: 'string', required: true },
+    { id: 'schema-1', field: 'action', type: 'string', required: true },
+    { id: 'schema-2', field: 'namespace', type: 'string', required: false },
+    { id: 'schema-3', field: 'value', type: 'number', required: false },
+  ]);
   const [replaySpeed, setReplaySpeed] = useState(4);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [schemaModalOpen, setSchemaModalOpen] = useState(false);
+  const schemaRowSeqRef = useRef(4);
 
   const appendTrace = useCallback((msg: Omit<TraceMessage, 'id'>) => {
     setMessages(prev => {
@@ -332,6 +127,8 @@ const App = () => {
 
   const disconnect = useCallback(() => {
     stopReplay();
+    socketIoReadyRef.current = false;
+    socketIoConnectSentRef.current = false;
     if (demoTimerRef.current) {
       window.clearInterval(demoTimerRef.current);
       demoTimerRef.current = null;
@@ -427,6 +224,8 @@ const App = () => {
     }
 
     stopReplay();
+    socketIoReadyRef.current = false;
+    socketIoConnectSentRef.current = false;
     if (wsRef.current && wsRef.current.readyState <= 1) {
       wsRef.current.close();
     }
@@ -436,7 +235,9 @@ const App = () => {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setConnState('CONNECTED');
+      if (!socketIoHandshake) {
+        setConnState('CONNECTED');
+      }
       appendTrace({
         ts: Date.now(),
         direction: 'sys',
@@ -447,20 +248,14 @@ const App = () => {
         protocol: 'raw',
         format: 'text',
       });
-
       if (socketIoHandshake) {
-        const namespace = normalizeSocketIoNamespace(socketIoNamespace);
-        const nsWire = namespace === '/' ? '' : namespace;
-        const authWire = socketAuth.auth ? `,${JSON.stringify(socketAuth.auth)}` : '';
-        const connectPacket = `40${nsWire}${authWire}`;
-        ws.send(connectPacket);
         appendTrace({
           ts: Date.now(),
           direction: 'sys',
           namespace: 'system',
-          event: 'socketio_connect_emit',
-          payload: connectPacket,
-          bytes: connectPacket.length,
+          event: 'socketio_wait_namespace',
+          payload: 'Waiting for Socket.IO engine open packet before namespace connect',
+          bytes: 0,
           protocol: 'socket.io',
           format: 'text',
         });
@@ -482,6 +277,8 @@ const App = () => {
     };
 
     ws.onclose = () => {
+      socketIoReadyRef.current = false;
+      socketIoConnectSentRef.current = false;
       setConnState('DISCONNECTED');
       appendTrace({
         ts: Date.now(),
@@ -496,6 +293,75 @@ const App = () => {
     };
 
     ws.onmessage = (event) => {
+      if (socketIoHandshake && typeof event.data === 'string') {
+        const packet = event.data;
+        const namespace = normalizeSocketIoNamespace(socketIoNamespace);
+        const nsWire = namespace === '/' ? '' : namespace;
+
+        if (packet === '2') {
+          ws.send('3');
+          appendTrace({
+            ts: Date.now(),
+            direction: 'sys',
+            namespace: 'system',
+            event: 'socketio_pong_emit',
+            payload: '3',
+            bytes: 1,
+            protocol: 'socket.io',
+            format: 'text',
+          });
+        }
+
+        if (!socketIoConnectSentRef.current && packet.startsWith('0')) {
+          const authWire = socketAuth.auth ? `,${JSON.stringify(socketAuth.auth)}` : '';
+          const connectPacket = `40${nsWire}${authWire}`;
+          ws.send(connectPacket);
+          socketIoConnectSentRef.current = true;
+          appendTrace({
+            ts: Date.now(),
+            direction: 'sys',
+            namespace: 'system',
+            event: 'socketio_connect_emit',
+            payload: connectPacket,
+            bytes: connectPacket.length,
+            protocol: 'socket.io',
+            format: 'text',
+          });
+        }
+
+        const namespaceConnected = namespace === '/'
+          ? packet === '40' || packet.startsWith('40{')
+          : packet === `40${namespace}` || packet.startsWith(`40${namespace},`);
+        if (namespaceConnected && !socketIoReadyRef.current) {
+          socketIoReadyRef.current = true;
+          setConnState('CONNECTED');
+          appendTrace({
+            ts: Date.now(),
+            direction: 'sys',
+            namespace: 'system',
+            event: 'socketio_namespace_connected',
+            payload: `Namespace connected -> ${namespace}`,
+            bytes: 0,
+            protocol: 'socket.io',
+            format: 'text',
+          });
+        }
+
+        const namespaceError = namespace === '/' ? packet.startsWith('44') : packet.startsWith(`44${namespace}`);
+        if (namespaceError) {
+          setConnState('ERROR');
+          appendTrace({
+            ts: Date.now(),
+            direction: 'sys',
+            namespace: 'system',
+            event: 'socketio_connect_error',
+            payload: packet,
+            bytes: packet.length,
+            protocol: 'socket.io',
+            format: 'text',
+          });
+        }
+      }
       void recordIncoming(event.data);
     };
   }, [appendTrace, recordIncoming, socketIoAuth, socketIoHandshake, socketIoNamespace, socketIoPath, stopReplay, wsUrl]);
@@ -592,26 +458,64 @@ const App = () => {
   }, []);
 
   const parsedSchema = useMemo(() => {
-    const parsed = safeJson(schemaText);
-    if (!parsed) {
-      return { schema: null, parseError: 'Schema must be valid JSON.' };
-    }
+    const required: string[] = [];
 
-    const required = Array.isArray(parsed.required) ? parsed.required.filter(v => typeof v === 'string') : undefined;
-    const propertiesRaw = parsed.properties;
-    const allowedTypes = new Set(['string', 'number', 'boolean', 'object', 'array']);
-    const properties: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'> = {};
-
-    if (typeof propertiesRaw === 'object' && propertiesRaw !== null) {
-      for (const [field, type] of Object.entries(propertiesRaw)) {
-        if (typeof type === 'string' && allowedTypes.has(type)) {
-          properties[field] = type as 'string' | 'number' | 'boolean' | 'object' | 'array';
-        }
+    const properties: Record<string, SchemaValueType> = {};
+    for (const draft of schemaProperties) {
+      const field = draft.field.trim();
+      if (!field) continue;
+      properties[field] = draft.type;
+      if (draft.required) {
+        required.push(field);
       }
     }
 
-    return { schema: { required, properties } as SimpleSchema, parseError: '' };
-  }, [schemaText]);
+    if (required.length === 0 && Object.keys(properties).length === 0) {
+      return { schema: null, parseError: '' };
+    }
+
+    return {
+      schema: {
+        required: required.length > 0 ? required : undefined,
+        properties: Object.keys(properties).length > 0 ? properties : undefined,
+      } as SimpleSchema,
+      parseError: '',
+    };
+  }, [schemaProperties]);
+
+  const addSchemaProperty = useCallback(() => {
+    const nextId = `schema-${schemaRowSeqRef.current++}`;
+    setSchemaProperties(prev => [...prev, { id: nextId, field: '', type: 'string', required: false }]);
+  }, []);
+
+  const removeSchemaProperty = useCallback((id: string) => {
+    setSchemaProperties(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const updateSchemaPropertyField = useCallback((id: string, field: string) => {
+    setSchemaProperties(prev => prev.map(item => item.id === id ? { ...item, field } : item));
+  }, []);
+
+  const updateSchemaPropertyType = useCallback((id: string, type: SchemaValueType) => {
+    setSchemaProperties(prev => prev.map(item => item.id === id ? { ...item, type } : item));
+  }, []);
+
+  const updateSchemaPropertyRequired = useCallback((id: string, required: boolean) => {
+    setSchemaProperties(prev => prev.map(item => item.id === id ? { ...item, required } : item));
+  }, []);
+
+  useEffect(() => {
+    if (!schemaModalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSchemaModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [schemaModalOpen]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -651,28 +555,39 @@ const App = () => {
 
   const sendMessage = useCallback(() => {
     if (!outPayload.trim()) return;
+    if (socketIoHandshake && protocolMode === 'socketio' && !socketIoReadyRef.current) {
+      appendSystem('socketio_not_ready', 'Socket.IO namespace is not connected yet');
+      return;
+    }
     const now = Date.now();
     const parsedPayload = safeJson(outPayload);
+    const enrichedPayload = autoRefreshEnvelope && parsedPayload
+      ? {
+        ...parsedPayload,
+        ...(Object.hasOwn(parsedPayload, 'id') ? { id: generateMessageId() } : {}),
+        ...(Object.hasOwn(parsedPayload, 'timestamp') ? { timestamp: now } : {}),
+      }
+      : parsedPayload;
 
     if (parsedSchema.parseError) {
       appendSystem('schema_error', parsedSchema.parseError);
       return;
     }
 
-    if (parsedPayload && parsedSchema.schema) {
-      const schemaErrors = validateAgainstSchema(parsedSchema.schema, parsedPayload);
+    if (enrichedPayload && parsedSchema.schema) {
+      const schemaErrors = validateAgainstSchema(parsedSchema.schema, enrichedPayload);
       if (schemaErrors.length > 0) {
         appendSystem('schema_violation', schemaErrors.join(' | '));
         return;
       }
     }
 
-    let wire = outPayload;
-    let requestId = extractCorrelationId(parsedPayload);
+    let wire = enrichedPayload ? JSON.stringify(enrichedPayload) : outPayload;
+    let requestId = extractCorrelationId(enrichedPayload);
 
     if (!requestId) {
       requestId = `trace-${now}`;
-      const nextPayload = parsedPayload ? { ...parsedPayload, requestId, namespace: outNamespace } : { requestId, namespace: outNamespace, raw: outPayload };
+      const nextPayload = enrichedPayload ? { ...enrichedPayload, requestId, namespace: outNamespace } : { requestId, namespace: outNamespace, raw: outPayload };
       wire = JSON.stringify(nextPayload);
     }
 
@@ -698,17 +613,18 @@ const App = () => {
       payload: wire,
       bytes: textEncoder.encode(wire).length,
       protocol,
-      format: parsedPayload ? 'json' : 'text',
+      format: enrichedPayload ? 'json' : 'text',
     });
 
     if (!demoMode && wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(wire);
     }
-  }, [appendSystem, appendTrace, demoMode, outNamespace, outPayload, parsedSchema.parseError, parsedSchema.schema, protocolMode, socketIoEvent, socketIoHandshake, socketIoNamespace]);
+  }, [appendSystem, appendTrace, autoRefreshEnvelope, demoMode, outNamespace, outPayload, parsedSchema.parseError, parsedSchema.schema, protocolMode, socketIoEvent, socketIoHandshake, socketIoNamespace]);
 
   const clearTimeline = useCallback(() => {
     stopReplay();
     setMessages([]);
+    setExpandedId(null);
     pendingMapRef.current.clear();
   }, [stopReplay]);
 
@@ -781,6 +697,7 @@ const App = () => {
 
     stopReplay();
     setMessages(imported);
+    setExpandedId(null);
     setActiveNamespaces(new Set(imported.map(m => m.namespace)));
     appendSystem('timeline_import', `Imported ${imported.length} entries`);
   }, [appendSystem, normalizeImportedMessages, stopReplay]);
@@ -830,6 +747,16 @@ const App = () => {
     setOutPayload(JSON.stringify(parsed, null, 2));
   }, [appendSystem, outPayload]);
 
+  const copyPayload = useCallback(async (id: string, payload: string) => {
+    await navigator.clipboard.writeText(payload);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(c => (c === id ? null : c)), 1500);
+  }, []);
+
+  const toggleRow = useCallback((id: string) => {
+    setExpandedId(prev => (prev === id ? null : id));
+  }, []);
+
   return (
     <div className="app-root">
       <div className="bg-grid" />
@@ -844,130 +771,163 @@ const App = () => {
 
         <section className="layout">
           <aside className="hud panel controls">
-            <h2>Connection</h2>
-            <label>
-              Endpoint
-              <input value={wsUrl} onChange={(e) => setWsUrl(e.target.value)} placeholder="ws://localhost:8080" disabled={demoMode} />
-            </label>
-            <label>
-              Protocol Decode
-              <select value={protocolMode} onChange={(e) => setProtocolMode(e.target.value as ProtocolMode)}>
-                <option value="auto">AUTO</option>
-                <option value="raw">RAW</option>
-                <option value="socketio">SOCKET.IO</option>
-              </select>
-            </label>
-            <label>
-              Socket.IO Handshake
-              <input
-                type="checkbox"
-                checked={socketIoHandshake}
-                onChange={(e) => setSocketIoHandshake(e.target.checked)}
-                disabled={demoMode}
-              />
-            </label>
-            {socketIoHandshake ? (
-              <>
+
+            <details open>
+              <summary>
+                Connection
+                <span className="summary-status">
+                  <span className={`dot ${connState.toLowerCase()}`} />
+                  <span className="summary-state">{connState}</span>
+                </span>
+              </summary>
+              <div className="section-body">
                 <label>
-                  Socket.IO Path
+                  Endpoint
+                  <input value={wsUrl} onChange={(e) => setWsUrl(e.target.value)} placeholder="ws://localhost:8080" disabled={demoMode} />
+                </label>
+                <label>
+                  Protocol Decode
+                  <select value={protocolMode} onChange={(e) => setProtocolMode(e.target.value as ProtocolMode)}>
+                    <option value="auto">AUTO</option>
+                    <option value="raw">RAW</option>
+                    <option value="socketio">SOCKET.IO</option>
+                  </select>
+                </label>
+                <label className="checkbox-label">
+                  Socket.IO Handshake
                   <input
-                    value={socketIoPath}
-                    onChange={(e) => setSocketIoPath(e.target.value)}
-                    placeholder="/socket.io"
+                    type="checkbox"
+                    checked={socketIoHandshake}
+                    onChange={(e) => setSocketIoHandshake(e.target.checked)}
                     disabled={demoMode}
                   />
                 </label>
+                {socketIoHandshake ? (
+                  <>
+                    <label>
+                      Socket.IO Path
+                      <input
+                        value={socketIoPath}
+                        onChange={(e) => setSocketIoPath(e.target.value)}
+                        placeholder="/socket.io"
+                        disabled={demoMode}
+                      />
+                    </label>
+                    <label>
+                      Socket.IO Namespace
+                      <input
+                        value={socketIoNamespace}
+                        onChange={(e) => setSocketIoNamespace(e.target.value)}
+                        placeholder="/devices"
+                        disabled={demoMode}
+                      />
+                    </label>
+                    <label>
+                      Socket.IO Auth JSON
+                      <textarea
+                        rows={4}
+                        value={socketIoAuth}
+                        onChange={(e) => setSocketIoAuth(e.target.value)}
+                        placeholder='{"serial":"dev-1","token":"secret"}'
+                        disabled={demoMode}
+                      />
+                    </label>
+                  </>
+                ) : null}
+
+                <div className="row">
+                  <button
+                    className={connState === 'DISCONNECTED' || connState === 'ERROR' ? 'btn-primary' : ''}
+                    onClick={connect}
+                    disabled={demoMode || connState === 'CONNECTING' || connState === 'CONNECTED'}
+                  >
+                    Connect
+                  </button>
+                  <button onClick={disconnect} disabled={connState === 'DISCONNECTED' && !demoMode}>Disconnect</button>
+                  <button
+                    className={demoMode ? 'btn-active' : ''}
+                    onClick={() => setDemoMode(v => !v)}
+                  >
+                    {demoMode ? 'Live Mode' : 'Demo'}
+                  </button>
+                </div>
+
+
+              </div>
+            </details>
+
+            <details open>
+              <summary>Namespace Filter</summary>
+              <div className="section-body">
+                <div className="ns-list">
+                  {allNamespaces.length === 0 ? (
+                    <p className="muted">No namespaces captured yet.</p>
+                  ) : (
+                    allNamespaces.map(ns => (
+                      <button
+                        key={ns}
+                        className={`ns-btn${activeNamespaces.has(ns) ? ' ns-btn--active' : ''}`}
+                        onClick={() => toggleNamespace(ns)}
+                      >
+                        {ns || '(root)'}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </details>
+
+            <details>
+              <summary>Schema Guard</summary>
+              <div className="section-body">
+                <div className="row">
+                  <button onClick={() => setSchemaModalOpen(true)}>Open Schema Builder</button>
+                </div>
+                <p className="muted">Leave both required fields and properties empty to disable validation.</p>
+              </div>
+            </details>
+
+            <details open>
+              <summary>Transmit</summary>
+              <div className="section-body">
                 <label>
-                  Socket.IO Namespace
-                  <input
-                    value={socketIoNamespace}
-                    onChange={(e) => setSocketIoNamespace(e.target.value)}
-                    placeholder="/devices"
-                    disabled={demoMode}
-                  />
+                  Namespace
+                  <input value={outNamespace} onChange={(e) => setOutNamespace(e.target.value)} />
                 </label>
-                <label>
-                  Socket.IO Auth JSON
-                  <textarea
-                    rows={4}
-                    value={socketIoAuth}
-                    onChange={(e) => setSocketIoAuth(e.target.value)}
-                    placeholder='{"serial":"dev-1","token":"secret"}'
-                    disabled={demoMode}
-                  />
-                </label>
-              </>
-            ) : null}
-
-            <div className="row">
-              <button onClick={connect} disabled={demoMode || connState === 'CONNECTING'}>Connect</button>
-              <button onClick={disconnect}>Disconnect</button>
-              <button onClick={() => setDemoMode(v => !v)}>{demoMode ? 'Live Mode' : 'Demo Mode'}</button>
-            </div>
-
-            <div className="status">
-              <span className={`dot ${connState.toLowerCase()}`} />
-              <span>{connState}</span>
-            </div>
-
-            <h2>Namespace Filter</h2>
-            <div className="ns-list">
-              {allNamespaces.length === 0 ? <p className="muted">No namespaces captured yet.</p> : allNamespaces.map(ns => (
-                <label key={ns} className="ns-item">
-                  <input type="checkbox" checked={activeNamespaces.has(ns)} onChange={() => toggleNamespace(ns)} />
-                  <span>{ns}</span>
-                </label>
-              ))}
-            </div>
-
-            <h2>Search</h2>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="event, namespace, payload" />
-
-            <h2>Schema Guard</h2>
-            <label>
-              Outgoing Payload Schema
-              <textarea rows={7} value={schemaText} onChange={(e) => setSchemaText(e.target.value)} />
-            </label>
-            {parsedSchema.parseError ? <p className="error">{parsedSchema.parseError}</p> : null}
-
-            <h2>Transmit</h2>
-            <label>
-              Namespace
-              <input value={outNamespace} onChange={(e) => setOutNamespace(e.target.value)} />
-            </label>
             {protocolMode === 'socketio' ? (
               <label>
                 Socket.IO Event
                 <input value={socketIoEvent} onChange={(e) => setSocketIoEvent(e.target.value)} placeholder="trace" />
               </label>
             ) : null}
+            <button
+              className={autoRefreshEnvelope ? 'btn-active' : ''}
+              onClick={() => setAutoRefreshEnvelope(v => !v)}
+            >
+              Auto-refresh id/timestamp
+            </button>
             <label>
               JSON Payload
               <textarea rows={5} value={outPayload} onChange={(e) => setOutPayload(e.target.value)} />
             </label>
 
-            <div className="row">
-              <button onClick={formatOutgoingJson}>Format JSON</button>
-              <button onClick={sendMessage}>Send Frame</button>
-            </div>
+                <div className="row">
+                  <button onClick={formatOutgoingJson}>Format JSON</button>
+                  <button className="btn-primary" onClick={sendMessage}>Send Frame</button>
+                </div>
+              </div>
+            </details>
+
           </aside>
 
           <section className="hud panel timeline">
             <div className="timeline-head">
               <h2>Message Timeline</h2>
-              <div className="chips">
-                <span>Total {metrics.total}</span>
-                <span>IN {metrics.inCount}</span>
-                <span>OUT {metrics.outCount}</span>
-                <span>AVG RTT {metrics.avgLatency.toFixed(1)}ms</span>
-                <span>PEAK RTT {metrics.peakLatency.toFixed(1)}ms</span>
-                <button onClick={clearTimeline}>Clear</button>
-                <button onClick={exportJson}>Export JSON</button>
-                <button onClick={exportNdjson}>Export NDJSON</button>
-                <button onClick={() => fileInputRef.current?.click()}>Import</button>
-                <button onClick={replayTimeline}>Replay</button>
-                <button onClick={stopReplay}>Stop Replay</button>
-              </div>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search event, namespace, payload"
+              />
             </div>
 
             <div className="replay-control">
@@ -997,34 +957,129 @@ const App = () => {
 
             <div className="rows">
               {filtered.length === 0 ? (
-                <p className="empty">No traffic after current filters.</p>
+                <div className="empty-state">
+                  <p className="empty-title">No traffic</p>
+                  <p className="empty-sub">Connect to a WebSocket endpoint or enable Demo Mode to see messages.</p>
+                </div>
               ) : (
                 [...filtered].reverse().map((msg, idx) => {
                   const prev = filtered.at(filtered.length - idx);
                   const delta = prev ? msg.ts - prev.ts : 0;
+                  const isExpanded = expandedId === msg.id;
                   const payloadPreview = msg.payload.length > 190 ? `${msg.payload.slice(0, 190)}...` : msg.payload;
                   return (
-                    <article key={msg.id} className={`row-item ${msg.direction}`}>
-                      <div className="stamp">{fmtTime(msg.ts)}</div>
-                      <div className="meta">
-                        <strong>{msg.namespace}</strong>
-                        <span>{msg.event}</span>
+                    <article
+                      key={msg.id}
+                      className={`row-item ${msg.direction}${isExpanded ? ' expanded' : ''}`}
+                      onClick={() => toggleRow(msg.id)}
+                    >
+                      <div className="row-main">
+                        <div className="stamp">{fmtTime(msg.ts)}</div>
+                        <div className="meta">
+                          <strong>{msg.namespace}</strong>
+                          <span>{msg.event}</span>
+                        </div>
+                        <div className="payload" title={msg.payload}>{payloadPreview}</div>
+                        <div className="overlay">
+                          <span className={`dir-badge dir-${msg.direction}`}>{msg.direction.toUpperCase()}</span>
+                          <span>{msg.bytes}B</span>
+                          <span>{msg.protocol}</span>
+                          {msg.latencyMs !== undefined ? (
+                            <span className="latency">RTT {msg.latencyMs}ms</span>
+                          ) : (
+                            <span>+{delta}ms</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="payload" title={msg.payload}>{payloadPreview}</div>
-                      <div className="overlay">
-                        <span>{msg.bytes}B</span>
-                        <span>{msg.protocol}</span>
-                        <span>{msg.format}</span>
-                        {msg.latencyMs !== undefined ? <span className="latency">RTT {msg.latencyMs}ms</span> : <span>+{delta}ms</span>}
-                      </div>
+                      {isExpanded && (
+                        <div className="row-expand" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="copy-btn"
+                            onClick={() => void copyPayload(msg.id, msg.payload)}
+                          >
+                            {copiedId === msg.id ? 'Copied!' : 'Copy'}
+                          </button>
+                          <pre className="payload-full">{prettyPayload(msg.payload)}</pre>
+                        </div>
+                      )}
                     </article>
                   );
                 })
               )}
             </div>
+
+            <div className="timeline-footer">
+              <div className="metrics-bar">
+                <span>Total <strong>{metrics.total}</strong></span>
+                <span>IN <strong>{metrics.inCount}</strong></span>
+                <span>OUT <strong>{metrics.outCount}</strong></span>
+                <span>AVG RTT <strong>{metrics.avgLatency.toFixed(1)}ms</strong></span>
+                <span>PEAK RTT <strong>{metrics.peakLatency.toFixed(1)}ms</strong></span>
+              </div>
+              <div className="timeline-actions">
+                <button onClick={clearTimeline}>Clear</button>
+                <button onClick={exportJson}>Export JSON</button>
+                <button onClick={exportNdjson}>Export NDJSON</button>
+                <button onClick={() => fileInputRef.current?.click()}>Import</button>
+                <button onClick={replayTimeline}>Replay</button>
+                <button onClick={stopReplay}>Stop</button>
+              </div>
+            </div>
           </section>
         </section>
       </main>
+      {schemaModalOpen ? (
+        <div className="modal-backdrop" onClick={() => setSchemaModalOpen(false)}>
+          <div
+            className="modal-card hud panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Schema Guard Builder"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h2>Schema Guard Builder</h2>
+              <button onClick={() => setSchemaModalOpen(false)}>Close</button>
+            </div>
+            <div className="section-body">
+              <div className="schema-builder">
+                {schemaProperties.map((item) => (
+                  <div key={item.id} className="schema-row">
+                    <input
+                      value={item.field}
+                      onChange={(e) => updateSchemaPropertyField(item.id, e.target.value)}
+                      placeholder="field"
+                    />
+                    <select
+                      value={item.type}
+                      onChange={(e) => updateSchemaPropertyType(item.id, e.target.value as SchemaValueType)}
+                    >
+                      <option value="string">string</option>
+                      <option value="number">number</option>
+                      <option value="boolean">boolean</option>
+                      <option value="object">object</option>
+                      <option value="array">array</option>
+                    </select>
+                    <label className="schema-required">
+                      <input
+                        type="checkbox"
+                        checked={item.required}
+                        onChange={(e) => updateSchemaPropertyRequired(item.id, e.target.checked)}
+                      />
+                      Required
+                    </label>
+                    <button onClick={() => removeSchemaProperty(item.id)}>Remove</button>
+                  </div>
+                ))}
+              </div>
+              <div className="row">
+                <button onClick={addSchemaProperty}>Add Property</button>
+              </div>
+              <p className="muted">Press `Esc` or click outside to close.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
