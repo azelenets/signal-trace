@@ -1,3 +1,5 @@
+![SignalTrace](./banner.svg)
+
 # Signal Trace
 
 Signal Trace is a browser-based WebSocket traffic inspector for real-time IoT debugging.
