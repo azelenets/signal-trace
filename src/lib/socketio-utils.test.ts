@@ -4,7 +4,7 @@ import {
   normalizeSocketIoNamespace,
   normalizeSocketIoPath,
   parseSocketIoAuth,
-} from '../src/lib/socketio-utils';
+} from './socketio-utils';
 
 describe('socketio-utils', () => {
   it('parses auth JSON object and reports invalid input', () => {

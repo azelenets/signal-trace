@@ -5,7 +5,7 @@ import {
   hexPreview,
   safeJson,
   validateAgainstSchema,
-} from '../src/lib/trace-utils';
+} from './trace-utils';
 
 describe('trace-utils', () => {
   it('parses object JSON and rejects non-object JSON', () => {

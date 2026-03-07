@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTimeline } from '../src/hooks/useTimeline';
+import { useTimeline } from './useTimeline';
 
 const BASE_MSG = {
   ts: 1000,

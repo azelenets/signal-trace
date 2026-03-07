@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SchemaGuardModal } from '../src/components/SchemaGuardModal';
-import type { SchemaPropertyDraft } from '../src/types';
+import { SchemaGuardModal } from './SchemaGuardModal';
+import type { SchemaPropertyDraft } from '../types';
 
 const SCHEMA: SchemaPropertyDraft[] = [
   { id: 's-0', field: 'requestId', type: 'string', required: true },

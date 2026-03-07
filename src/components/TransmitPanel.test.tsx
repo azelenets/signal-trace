@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TransmitPanel } from '../src/components/TransmitPanel';
+import { TransmitPanel } from './TransmitPanel';
 
 const defaultProps = {
   protocolMode: 'auto' as const,

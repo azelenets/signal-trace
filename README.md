@@ -61,15 +61,6 @@ If your backend uses Socket.IO namespaces/auth:
 - Signal Trace waits for namespace connection before allowing Socket.IO sends.
 - Engine.IO ping (`2`) is handled automatically with pong (`3`) keepalive replies.
 
-### Repeated Sends To `bewf`
-When sending multiple messages to `bewf`, keep **Auto-refresh id/timestamp** enabled in the **Transmit** panel.
-This updates top-level `id` and `timestamp` on each send and helps avoid backend event key collisions when re-sending the same payload.
-
-Recommended `bewf` transmit settings:
-- **Protocol Decode**: `socketio`
-- **Socket.IO Namespace**: `/devices`
-- **Socket.IO Event**: `device_telemetry`
-
 ### Schema Guard Builder
 - Open **Schema Guard** from the sidebar and click **Open Schema Builder**.
 - Add fields with type (`string`, `number`, `boolean`, `object`, `array`).

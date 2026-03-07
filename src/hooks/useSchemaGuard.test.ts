@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import { useSchemaGuard } from '../src/hooks/useSchemaGuard';
+import { useSchemaGuard } from './useSchemaGuard';
 
 describe('useSchemaGuard', () => {
   afterEach(cleanup);

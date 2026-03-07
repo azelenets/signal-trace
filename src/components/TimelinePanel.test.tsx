@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TimelinePanel } from '../src/components/TimelinePanel';
-import type { Metrics, TraceMessage } from '../src/types';
+import { TimelinePanel } from './TimelinePanel';
+import type { Metrics, TraceMessage } from '../types';
 
 const METRICS: Metrics = {
   total: 3,
