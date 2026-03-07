@@ -1,9 +1,9 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ConnectionPanel } from '../src/components/ConnectionPanel';
-import type { LinkState } from '../src/types';
-import type { ProtocolMode } from '../src/lib/trace-utils';
+import { ConnectionPanel } from './ConnectionPanel';
+import type { LinkState } from '../types';
+import type { ProtocolMode } from '../lib/trace-utils';
 
 const defaultProps = {
   connState: 'DISCONNECTED' as LinkState,

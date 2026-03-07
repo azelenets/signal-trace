@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTimeline } from '../src/hooks/useTimeline';
+import { useTimeline } from './useTimeline';
 
 const BASE_MSG = {
   ts: 1000,
@@ -16,8 +16,8 @@ const BASE_MSG = {
 describe('useTimeline', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    global.URL.createObjectURL = vi.fn(() => 'blob:test');
-    global.URL.revokeObjectURL = vi.fn();
+    globalThis.URL.createObjectURL = vi.fn(() => 'blob:test');
+    globalThis.URL.revokeObjectURL = vi.fn();
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
       configurable: true,

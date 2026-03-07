@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useConnection } from '../src/hooks/useConnection';
+import { useConnection } from './useConnection';
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];

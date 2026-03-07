@@ -61,15 +61,6 @@ If your backend uses Socket.IO namespaces/auth:
 - Signal Trace waits for namespace connection before allowing Socket.IO sends.
 - Engine.IO ping (`2`) is handled automatically with pong (`3`) keepalive replies.
 
-### Repeated Sends To `bewf`
-When sending multiple messages to `bewf`, keep **Auto-refresh id/timestamp** enabled in the **Transmit** panel.
-This updates top-level `id` and `timestamp` on each send and helps avoid backend event key collisions when re-sending the same payload.
-
-Recommended `bewf` transmit settings:
-- **Protocol Decode**: `socketio`
-- **Socket.IO Namespace**: `/devices`
-- **Socket.IO Event**: `device_telemetry`
-
 ### Schema Guard Builder
 - Open **Schema Guard** from the sidebar and click **Open Schema Builder**.
 - Add fields with type (`string`, `number`, `boolean`, `object`, `array`).
@@ -77,23 +68,64 @@ Recommended `bewf` transmit settings:
 - Leave all fields empty to disable schema validation.
 
 ## Testing
-Current test suite covers:
-- Socket.IO URL/auth/namespace utility behavior
-- Frame decoding and schema-validation utility behavior
-- Core UI flows (schema modal, validation errors, Socket.IO send guards, handshake lifecycle)
+
+Stack: **Vitest** + **@testing-library/react** + **@testing-library/user-event** + **@testing-library/jest-dom**. Test files live next to their implementation files.
+
+Run all tests once:
+```bash
+npm run test:run
+```
+
+Run in watch mode:
+```bash
+npm run test
+```
+
+Coverage areas:
+- `src/lib/` — pure utility unit tests (frame decoding, schema validation, Socket.IO URL/auth/namespace helpers)
+- `src/hooks/` — `renderHook` + `act` tests for `useTimeline`, `useConnection`, `useSchemaGuard`
+- `src/components/` — render + user-event tests for every component
+- `src/App.test.tsx` — integration tests: schema modal, validation errors, Socket.IO handshake lifecycle
 
 ## Project Structure
 ```text
-.
-├── src/
-│   ├── App.tsx       # Main inspector UI + runtime logic
-│   ├── main.tsx      # App bootstrap
-│   └── styles.css    # Styling
-├── index.html
-├── package.json
-└── AGENTS.md
+src/
+  App.tsx                   # Thin orchestrator — wires hooks + components
+  App.test.tsx              # Integration tests
+  types.ts                  # Shared domain types
+  main.tsx
+  styles.css
+  hooks/
+    useTimeline.ts           # Messages, filtering, search, metrics, demo mode, replay, import/export
+    useTimeline.test.ts
+    useConnection.ts         # WebSocket lifecycle, Socket.IO handshake, protocol decode, RTT tracking
+    useConnection.test.ts
+    useSchemaGuard.ts        # Schema builder state, parsedSchema memo, Esc key listener
+    useSchemaGuard.test.ts
+  components/
+    ConnectionPanel.tsx      # Connection settings form
+    ConnectionPanel.test.tsx
+    NamespaceFilter.tsx      # Namespace toggle buttons
+    NamespaceFilter.test.tsx
+    TransmitPanel.tsx        # Send form with local state
+    TransmitPanel.test.tsx
+    SchemaGuardModal.tsx     # Schema builder modal
+    SchemaGuardModal.test.tsx
+    MessageRow.tsx           # Single message row with expand/copy
+    MessageRow.test.tsx
+    TimelinePanel.tsx        # Right-panel shell composing MessageRow list
+    TimelinePanel.test.tsx
+  lib/
+    trace-utils.ts           # Pure: frame decoding, schema validation, hex preview, safeJson
+    trace-utils.test.ts
+    socketio-utils.ts        # Pure: URL building, namespace/path normalization, auth parsing
+    socketio-utils.test.ts
+vitest.setup.ts              # @testing-library/jest-dom setup
+vite.config.ts
+index.html
+package.json
+AGENTS.md                    # Architecture and development guidelines
 ```
 
 ## Notes
-- This project includes a Vitest + Testing Library test suite (`npm run test:run`).
 - If your endpoint is unavailable, use Demo mode to test the UI behavior.

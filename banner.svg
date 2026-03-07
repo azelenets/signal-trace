@@ -9,7 +9,7 @@
       <line x1="0" y1="0" x2="0" y2="36" stroke="#00f3ff" stroke-opacity="0.05" stroke-width="1"/>
     </pattern>
     <clipPath id="rowClip">
-      <rect x="613" y="80" width="547" height="310"/>
+      <rect x="445" y="80" width="715" height="310"/>
     </clipPath>
   </defs>
 
@@ -59,81 +59,81 @@
   <text x="64" y="442" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af" letter-spacing="1">CONNECTED</text>
 
   <!-- Vertical separator -->
-  <line x1="592" y1="44" x2="592" y2="436" stroke="#00f3ff" stroke-opacity="0.15" stroke-width="1"/>
+  <line x1="430" y1="44" x2="430" y2="436" stroke="#00f3ff" stroke-opacity="0.15" stroke-width="1"/>
 
   <!-- ─── RIGHT: MESSAGE TIMELINE ─── -->
 
   <!-- Header -->
-  <text x="614" y="66" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#93b7c4" letter-spacing="2.5">MESSAGE TIMELINE</text>
-  <line x1="614" y1="74" x2="1158" y2="74" stroke="#00f3ff" stroke-opacity="0.12" stroke-width="1"/>
+  <text x="447" y="66" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#93b7c4" letter-spacing="2.5">MESSAGE TIMELINE</text>
+  <line x1="447" y1="74" x2="1158" y2="74" stroke="#00f3ff" stroke-opacity="0.12" stroke-width="1"/>
 
   <g clip-path="url(#rowClip)">
 
     <!-- ROW 1: IN — heartbeat -->
-    <rect x="613" y="84" width="547" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
-    <rect x="613" y="84" width="3"   height="44" fill="#4ade80"/>
-    <text x="626" y="112" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:07.412</text>
-    <text x="762" y="104" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/telemetry</text>
-    <text x="762" y="119" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">heartbeat</text>
-    <text x="955" y="112" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"value":72.4,"unit":"ms"}</text>
+    <rect x="445" y="84" width="715" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
+    <rect x="445" y="84" width="3"   height="44" fill="#4ade80"/>
+    <text x="458" y="112" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:07.412</text>
+    <text x="594" y="104" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/telemetry</text>
+    <text x="594" y="119" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">heartbeat</text>
+    <text x="787" y="112" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"value":72.4,"unit":"ms"}</text>
     <rect x="1112" y="95"  width="36" height="16" fill="#4ade80" fill-opacity="0.12" stroke="#4ade80" stroke-opacity="0.3" stroke-width="1"/>
     <text x="1130" y="107" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#4ade80" text-anchor="middle" font-weight="700">IN</text>
 
     <!-- ROW 2: OUT — send -->
-    <rect x="613" y="134" width="547" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
-    <rect x="613" y="134" width="3"   height="44" fill="#fbbf24"/>
-    <text x="626" y="162" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:07.318</text>
-    <text x="762" y="154" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/telemetry</text>
-    <text x="762" y="169" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">send</text>
-    <text x="955" y="162" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"requestId":"req-3021"}</text>
+    <rect x="445" y="134" width="715" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
+    <rect x="445" y="134" width="3"   height="44" fill="#fbbf24"/>
+    <text x="458" y="162" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:07.318</text>
+    <text x="594" y="154" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/telemetry</text>
+    <text x="594" y="169" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">send</text>
+    <text x="787" y="162" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"requestId":"req-3021"}</text>
     <rect x="1109" y="145" width="42" height="16" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-opacity="0.3" stroke-width="1"/>
     <text x="1130" y="157" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#fbbf24" text-anchor="middle" font-weight="700">OUT</text>
 
     <!-- ROW 3: IN — state -->
-    <rect x="613" y="184" width="547" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
-    <rect x="613" y="184" width="3"   height="44" fill="#4ade80"/>
-    <text x="626" y="212" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:06.891</text>
-    <text x="762" y="204" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/device</text>
-    <text x="762" y="219" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">state</text>
-    <text x="955" y="212" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"id":"dev-042","online":true}</text>
+    <rect x="445" y="184" width="715" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
+    <rect x="445" y="184" width="3"   height="44" fill="#4ade80"/>
+    <text x="458" y="212" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:06.891</text>
+    <text x="594" y="204" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/device</text>
+    <text x="594" y="219" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">state</text>
+    <text x="787" y="212" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"id":"dev-042","online":true}</text>
     <rect x="1112" y="195" width="36" height="16" fill="#4ade80" fill-opacity="0.12" stroke="#4ade80" stroke-opacity="0.3" stroke-width="1"/>
     <text x="1130" y="207" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#4ade80" text-anchor="middle" font-weight="700">IN</text>
 
     <!-- ROW 4: IN — fault -->
-    <rect x="613" y="234" width="547" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
-    <rect x="613" y="234" width="3"   height="44" fill="#4ade80"/>
-    <text x="626" y="262" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:06.544</text>
-    <text x="762" y="254" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/alerts</text>
-    <text x="762" y="269" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">fault</text>
-    <text x="955" y="262" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"code":"E_TEMP","sev":"warn"}</text>
+    <rect x="445" y="234" width="715" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
+    <rect x="445" y="234" width="3"   height="44" fill="#4ade80"/>
+    <text x="458" y="262" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:06.544</text>
+    <text x="594" y="254" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/alerts</text>
+    <text x="594" y="269" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">fault</text>
+    <text x="787" y="262" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"code":"E_TEMP","sev":"warn"}</text>
     <rect x="1112" y="245" width="36" height="16" fill="#4ade80" fill-opacity="0.12" stroke="#4ade80" stroke-opacity="0.3" stroke-width="1"/>
     <text x="1130" y="257" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#4ade80" text-anchor="middle" font-weight="700">IN</text>
 
     <!-- ROW 5: SYS — socket_open -->
-    <rect x="613" y="284" width="547" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
-    <rect x="613" y="284" width="3"   height="44" fill="#38bdf8"/>
-    <text x="626" y="312" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:06.100</text>
-    <text x="762" y="304" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">system</text>
-    <text x="762" y="319" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">socket_open</text>
-    <text x="955" y="312" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">Connected -&gt; ws://device:8080</text>
+    <rect x="445" y="284" width="715" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
+    <rect x="445" y="284" width="3"   height="44" fill="#38bdf8"/>
+    <text x="458" y="312" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:06.100</text>
+    <text x="594" y="304" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">system</text>
+    <text x="594" y="319" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">socket_open</text>
+    <text x="787" y="312" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">Connected -&gt; ws://device:8080</text>
     <rect x="1107" y="295" width="42" height="16" fill="#38bdf8" fill-opacity="0.12" stroke="#38bdf8" stroke-opacity="0.3" stroke-width="1"/>
     <text x="1128" y="307" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#38bdf8" text-anchor="middle" font-weight="700">SYS</text>
 
     <!-- ROW 6: OUT — send -->
-    <rect x="613" y="334" width="547" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
-    <rect x="613" y="334" width="3"   height="44" fill="#fbbf24"/>
-    <text x="626" y="362" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:05.711</text>
-    <text x="762" y="354" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/firmware</text>
-    <text x="762" y="369" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">send</text>
-    <text x="955" y="362" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"action":"check_update"}</text>
+    <rect x="445" y="334" width="715" height="44" fill="#03060a" fill-opacity="0.72" stroke="#94a3b8" stroke-opacity="0.18" stroke-width="1"/>
+    <rect x="445" y="334" width="3"   height="44" fill="#fbbf24"/>
+    <text x="458" y="362" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#9eb7c4">14:23:05.711</text>
+    <text x="594" y="354" font-family="'IBM Plex Mono',monospace" font-size="11" font-weight="700" fill="#c3dde8">/firmware</text>
+    <text x="594" y="369" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#88a4af">send</text>
+    <text x="787" y="362" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b4c7d1">{"action":"check_update"}</text>
     <rect x="1109" y="345" width="42" height="16" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-opacity="0.3" stroke-width="1"/>
     <text x="1130" y="357" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#fbbf24" text-anchor="middle" font-weight="700">OUT</text>
 
   </g>
 
   <!-- Metrics footer -->
-  <line x1="614" y1="398" x2="1158" y2="398" stroke="#00f3ff" stroke-opacity="0.1" stroke-width="1"/>
-  <text x="618" y="417" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#88a4af" letter-spacing="1">TOTAL <tspan fill="#9ab5c0" font-weight="600">6</tspan>&#160;&#160;&#160;IN <tspan fill="#9ab5c0" font-weight="600">4</tspan>&#160;&#160;&#160;OUT <tspan fill="#9ab5c0" font-weight="600">2</tspan>&#160;&#160;&#160;AVG RTT <tspan fill="#9ab5c0" font-weight="600">42.3ms</tspan>&#160;&#160;&#160;PEAK RTT <tspan fill="#fbbf24" font-weight="600">118.0ms</tspan></text>
-  <text x="618" y="436" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#88a4af" letter-spacing="1">REPLAY SPEED <tspan fill="#9ab5c0" font-weight="600">4x</tspan></text>
+  <line x1="447" y1="398" x2="1158" y2="398" stroke="#00f3ff" stroke-opacity="0.1" stroke-width="1"/>
+  <text x="450" y="417" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#88a4af" letter-spacing="1">TOTAL <tspan fill="#9ab5c0" font-weight="600">6</tspan>&#160;&#160;&#160;IN <tspan fill="#9ab5c0" font-weight="600">4</tspan>&#160;&#160;&#160;OUT <tspan fill="#9ab5c0" font-weight="600">2</tspan>&#160;&#160;&#160;AVG RTT <tspan fill="#9ab5c0" font-weight="600">42.3ms</tspan>&#160;&#160;&#160;PEAK RTT <tspan fill="#fbbf24" font-weight="600">118.0ms</tspan></text>
+  <text x="450" y="436" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#88a4af" letter-spacing="1">REPLAY SPEED <tspan fill="#9ab5c0" font-weight="600">4x</tspan></text>
 
 </svg>

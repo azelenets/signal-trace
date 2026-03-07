@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NamespaceFilter } from '../src/components/NamespaceFilter';
+import { NamespaceFilter } from './NamespaceFilter';
 
 describe('NamespaceFilter', () => {
   afterEach(cleanup);
