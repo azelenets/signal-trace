@@ -97,6 +97,9 @@ select:focus {
   padding: 1.25rem;
   display: grid;
   gap: 1rem;
+  height: 100dvh;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
 }
 
 .hud {
@@ -160,6 +163,8 @@ header h1 span {
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 1rem;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ── Sidebar controls ── */
@@ -168,6 +173,8 @@ header h1 span {
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 details {
@@ -396,7 +403,8 @@ textarea {
 /* ── Timeline ── */
 
 .timeline {
-  min-height: 72vh;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;

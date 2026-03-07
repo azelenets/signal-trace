@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
@@ -66,11 +66,18 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const payloadInput = screen.getAllByLabelText('JSON Payload')[0];
-    fireEvent.change(payloadInput, {
-      target: { value: '{"action":"ping"}' },
-    });
+    // Open schema builder and add a required field
+    await user.click(screen.getByText('Schema Guard'));
+    await user.click(screen.getByRole('button', { name: 'Open Schema Builder' }));
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Add Property' }));
+    fireEvent.change(within(dialog).getByPlaceholderText('field'), { target: { value: 'requestId' } });
+    fireEvent.click(within(dialog).getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
 
+    // Send a payload that is missing the required field
+    const payloadInput = screen.getAllByLabelText('JSON Payload')[0];
+    fireEvent.change(payloadInput, { target: { value: '{"action":"ping"}' } });
     await user.click(screen.getByRole('button', { name: 'Send Frame' }));
 
     expect(screen.getByText('schema_violation')).toBeInTheDocument();
