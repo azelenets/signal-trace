@@ -1,16 +1,31 @@
 import { memo, useCallback, useState } from 'react';
-import type { SendParams } from '../types';
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  FormRow,
+  FormSection,
+  Input,
+  Textarea,
+  Toggle,
+} from '@azelenets/aegis-design-system';
+import type { LinkState, SendParams } from '../types';
 import type { ProtocolMode } from '../lib/trace-utils';
 import { safeJson } from '../lib/trace-utils';
 
 interface TransmitPanelProps {
+  connState: LinkState;
   protocolMode: ProtocolMode;
+  onOpenSchemaBuilder: () => void;
   onSend: (params: SendParams) => void;
   onSystemLog: (event: string, payload: string) => void;
 }
 
 export const TransmitPanel = memo(function TransmitPanel({
+  connState,
   protocolMode,
+  onOpenSchemaBuilder,
   onSend,
   onSystemLog,
 }: TransmitPanelProps) {
@@ -33,42 +48,57 @@ export const TransmitPanel = memo(function TransmitPanel({
   }, [onSystemLog, payload]);
 
   return (
-    <details open>
-      <summary>Transmit</summary>
-      <div className="section-body">
-        <label>
-          Namespace
-          <input value={namespace} onChange={(e) => setNamespace(e.target.value)} />
-        </label>
-        {protocolMode === 'socketio' && (
-          <label>
-            Socket.IO Event
-            <input
+    <Card variant="primary">
+      <CardHeader
+        title="Transmit"
+        eyebrow="Outbound"
+        action={(
+          <Button type="button" size="sm" variant="secondary" onClick={onOpenSchemaBuilder}>
+            Open Schema Builder
+          </Button>
+        )}
+      />
+      <CardBody>
+        <FormSection>
+          <Input
+            label="Namespace"
+            value={namespace}
+            onChange={(e) => setNamespace(e.target.value)}
+          />
+          {protocolMode === 'socketio' && (
+            <Input
+              label="Socket.IO Event"
               value={socketIoEvent}
               onChange={(e) => setSocketIoEvent(e.target.value)}
               placeholder="trace"
             />
-          </label>
-        )}
-        <button
-          className={autoRefresh ? 'btn-active' : ''}
-          onClick={() => setAutoRefresh(v => !v)}
-        >
-          Auto-refresh id/timestamp
-        </button>
-        <label>
-          JSON Payload
-          <textarea
-            rows={5}
+          )}
+          <Toggle
+            label="Auto-refresh id/timestamp"
+            checked={autoRefresh}
+            onChange={() => setAutoRefresh(v => !v)}
+          />
+          <Textarea
+            label="JSON Payload"
+            rows={7}
             value={payload}
             onChange={(e) => setPayload(e.target.value)}
           />
-        </label>
-        <div className="row">
-          <button onClick={handleFormatJson}>Format JSON</button>
-          <button className="btn-primary" onClick={handleSend}>Send Frame</button>
-        </div>
-      </div>
-    </details>
+          <FormRow cols={2}>
+            <Button type="button" variant="secondary" onClick={handleFormatJson}>
+              Format JSON
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleSend}
+              disabled={connState === 'DISCONNECTED'}
+            >
+              Send Frame
+            </Button>
+          </FormRow>
+        </FormSection>
+      </CardBody>
+    </Card>
   );
 });

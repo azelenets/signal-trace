@@ -1,4 +1,15 @@
 import { memo } from 'react';
+import {
+  Button,
+  FormRow,
+  Input,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  Toggle,
+} from '@azelenets/aegis-design-system';
 import type { SchemaPropertyDraft, SchemaValueType } from '../types';
 
 interface SchemaGuardModalProps {
@@ -21,55 +32,63 @@ export const SchemaGuardModal = memo(function SchemaGuardModal({
   onUpdateRequired,
 }: SchemaGuardModalProps) {
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal-card hud panel"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Schema Guard Builder"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2>Schema Guard Builder</h2>
-          <button onClick={onClose}>Close</button>
-        </div>
+    <Modal
+      open
+      onClose={onClose}
+      size="xl"
+      variant="primary"
+      aria-label="Schema Guard Builder"
+    >
+      <ModalHeader title="Schema Guard Builder" eyebrow="Validation" onClose={onClose} />
+      <ModalBody>
         <div className="section-body">
+          <p className="muted">Compose a frame and emit it through the current connection.</p>
+          <p className="muted">
+            Leave both required fields and properties empty to disable validation.
+          </p>
           <div className="schema-builder">
             {schemaProperties.map((item) => (
               <div key={item.id} className="schema-row">
-                <input
+                <Input
+                  label="Field"
                   value={item.field}
                   onChange={(e) => onUpdateField(item.id, e.target.value)}
                   placeholder="field"
                 />
-                <select
+                <Select
+                  label="Type"
                   value={item.type}
-                  onChange={(e) => onUpdateType(item.id, e.target.value as SchemaValueType)}
-                >
-                  <option value="string">string</option>
-                  <option value="number">number</option>
-                  <option value="boolean">boolean</option>
-                  <option value="object">object</option>
-                  <option value="array">array</option>
-                </select>
-                <label className="schema-required">
-                  <input
-                    type="checkbox"
-                    checked={item.required}
-                    onChange={(e) => onUpdateRequired(item.id, e.target.checked)}
-                  />
-                  Required
-                </label>
-                <button onClick={() => onRemove(item.id)}>Remove</button>
+                  onChange={(value) => onUpdateType(item.id, value as SchemaValueType)}
+                  options={[
+                    { value: 'string', label: 'string' },
+                    { value: 'number', label: 'number' },
+                    { value: 'boolean', label: 'boolean' },
+                    { value: 'object', label: 'object' },
+                    { value: 'array', label: 'array' },
+                  ]}
+                />
+                <Toggle
+                  label="Required"
+                  checked={item.required}
+                  size="lg"
+                  className="pb-2"
+                  onChange={(e) => onUpdateRequired(item.id, e.target.checked)}
+                />
+                <Button type="button" variant="danger" size="lg" onClick={() => onRemove(item.id)}>
+                  Remove
+                </Button>
               </div>
             ))}
           </div>
-          <div className="row">
-            <button onClick={onAdd}>Add Property</button>
-          </div>
+          <FormRow cols={1}>
+            <Button type="button" variant="primary" onClick={onAdd}>Add Property</Button>
+          </FormRow>
           <p className="muted">Press `Esc` or click outside to close.</p>
         </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter align="right">
+        <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+      </ModalFooter>
+    </Modal>
   );
 });

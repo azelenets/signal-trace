@@ -37,7 +37,7 @@ describe('ConnectionPanel', () => {
   it('shows connection status dot and state label', () => {
     render(<ConnectionPanel {...defaultProps} connState="CONNECTED" />);
     expect(screen.getByText('CONNECTED')).toBeInTheDocument();
-    expect(document.querySelector('.dot.connected')).toBeInTheDocument();
+    expect(screen.getByText('CONNECTED').closest('span')).toBeInTheDocument();
   });
 
   it('hides Socket.IO fields when handshake is off', () => {

@@ -1,4 +1,11 @@
 import { memo } from 'react';
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  FilterButton,
+  VStack,
+} from '@azelenets/aegis-design-system';
 
 interface NamespaceFilterProps {
   allNamespaces: string[];
@@ -12,25 +19,25 @@ export const NamespaceFilter = memo(function NamespaceFilter({
   onToggle,
 }: NamespaceFilterProps) {
   return (
-    <details open>
-      <summary>Namespace Filter</summary>
-      <div className="section-body">
-        <div className="ns-list">
+    <Card variant="default">
+      <CardHeader title="Namespace Filter" eyebrow="Routing" />
+      <CardBody>
+        <VStack className="ns-list">
           {allNamespaces.length === 0 ? (
             <p className="muted">No namespaces captured yet.</p>
           ) : (
             allNamespaces.map(ns => (
-              <button
+              <FilterButton
                 key={ns}
-                className={`ns-btn${activeNamespaces.has(ns) ? ' ns-btn--active' : ''}`}
+                active={activeNamespaces.has(ns)}
+                label={ns || '(root)'}
+                className={activeNamespaces.has(ns) ? 'ns-btn ns-btn--active' : 'ns-btn'}
                 onClick={() => onToggle(ns)}
-              >
-                {ns || '(root)'}
-              </button>
+              />
             ))
           )}
-        </div>
-      </div>
-    </details>
+        </VStack>
+      </CardBody>
+    </Card>
   );
 });

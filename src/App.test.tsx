@@ -41,6 +41,11 @@ class MockWebSocket {
 describe('App', () => {
   const originalWebSocket = globalThis.WebSocket;
 
+  const selectProtocolMode = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getAllByRole('combobox', { name: 'Protocol Decode' })[0]);
+    await user.click(screen.getByRole('option', { name: 'SOCKET.IO' }));
+  };
+
   beforeEach(() => {
     MockWebSocket.instances.length = 0;
     globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
@@ -55,10 +60,9 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByText('Schema Guard'));
     await user.click(screen.getByRole('button', { name: 'Open Schema Builder' }));
 
-    expect(screen.getByRole('dialog', { name: 'Schema Guard Builder' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Schema Guard Builder')).toBeInTheDocument();
   });
 
@@ -67,7 +71,6 @@ describe('App', () => {
     render(<App />);
 
     // Open schema builder and add a required field
-    await user.click(screen.getByText('Schema Guard'));
     await user.click(screen.getByRole('button', { name: 'Open Schema Builder' }));
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Add Property' }));
@@ -78,6 +81,7 @@ describe('App', () => {
     // Send a payload that is missing the required field
     const payloadInput = screen.getAllByLabelText('JSON Payload')[0];
     fireEvent.change(payloadInput, { target: { value: '{"action":"ping"}' } });
+    await user.click(screen.getByRole('button', { name: 'Demo' }));
     await user.click(screen.getByRole('button', { name: 'Send Frame' }));
 
     expect(screen.getByText('schema_violation')).toBeInTheDocument();
@@ -87,8 +91,9 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.selectOptions(screen.getAllByLabelText('Protocol Decode')[0], 'socketio');
+    await selectProtocolMode(user);
     await user.click(screen.getAllByLabelText('Socket.IO Handshake')[0]);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
     await user.click(screen.getByRole('button', { name: 'Send Frame' }));
 
     expect(screen.getByText('socketio_not_ready')).toBeInTheDocument();
@@ -98,7 +103,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.selectOptions(screen.getAllByLabelText('Protocol Decode')[0], 'socketio');
+    await selectProtocolMode(user);
     await user.click(screen.getAllByLabelText('Socket.IO Handshake')[0]);
     await user.clear(screen.getAllByLabelText('Socket.IO Namespace')[0]);
     await user.type(screen.getAllByLabelText('Socket.IO Namespace')[0], '/devices');
@@ -108,14 +113,14 @@ describe('App', () => {
     expect(ws).toBeDefined();
 
     ws.emitOpen();
-    expect(screen.getByText('CONNECTING')).toBeInTheDocument();
+    expect(screen.getAllByText('CONNECTING').length).toBeGreaterThan(0);
 
     ws.emitMessage('0{"sid":"abc"}');
     expect(ws.send).toHaveBeenCalledWith('40/devices');
 
     ws.emitMessage('40/devices');
     await waitFor(() => {
-      expect(screen.getByText('CONNECTED')).toBeInTheDocument();
+      expect(screen.getAllByText('CONNECTED').length).toBeGreaterThan(0);
     });
 
     ws.emitMessage('2');

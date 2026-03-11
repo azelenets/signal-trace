@@ -1,4 +1,17 @@
 import { memo } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  FormRow,
+  FormSection,
+  Input,
+  Select,
+  Textarea,
+  Toggle,
+} from '@azelenets/aegis-design-system';
 import type { LinkState } from '../types';
 import type { ProtocolMode } from '../lib/trace-utils';
 
@@ -41,99 +54,105 @@ export const ConnectionPanel = memo(function ConnectionPanel({
   onDisconnect,
   onToggleDemo,
 }: ConnectionPanelProps) {
+  const statusVariant = (() => {
+    switch (connState) {
+      case 'CONNECTED':
+        return 'success';
+      case 'CONNECTING':
+        return 'hazard';
+      case 'ERROR':
+        return 'alert';
+      default:
+        return 'ghost';
+    }
+  })();
+
   return (
-    <details open>
-      <summary>
-        Connection
-        <span className="summary-status">
-          <span className={`dot ${connState.toLowerCase()}`} />
-          <span className="summary-state">{connState}</span>
-        </span>
-      </summary>
-      <div className="section-body">
-        <label>
-          Endpoint
-          <input
+    <Card variant="default">
+      <CardHeader
+        title="Connection"
+        eyebrow="Transport"
+        action={<Badge label={connState} variant={statusVariant} dot />}
+      />
+      <CardBody>
+        <FormSection description="Configure the live endpoint and protocol framing.">
+          <Input
+            label="Endpoint"
             value={wsUrl}
             onChange={(e) => setWsUrl(e.target.value)}
             placeholder="ws://localhost:8080"
             disabled={demoMode}
+            icon="link"
           />
-        </label>
-        <label>
-          Protocol Decode
-          <select
+          <Select
+            label="Protocol Decode"
             value={protocolMode}
-            onChange={(e) => setProtocolMode(e.target.value as ProtocolMode)}
-          >
-            <option value="auto">AUTO</option>
-            <option value="raw">RAW</option>
-            <option value="socketio">SOCKET.IO</option>
-          </select>
-        </label>
-        <label className="checkbox-label">
-          Socket.IO Handshake
-          <input
-            type="checkbox"
+            onChange={(value) => setProtocolMode(value as ProtocolMode)}
+            options={[
+              { value: 'auto', label: 'AUTO' },
+              { value: 'raw', label: 'RAW' },
+              { value: 'socketio', label: 'SOCKET.IO' },
+            ]}
+          />
+          <Toggle
+            label="Socket.IO Handshake"
             checked={socketIoHandshake}
             onChange={(e) => setSocketIoHandshake(e.target.checked)}
             disabled={demoMode}
           />
-        </label>
-        {socketIoHandshake && (
-          <>
-            <label>
-              Socket.IO Path
-              <input
+          {socketIoHandshake && (
+            <>
+              <Input
+                label="Socket.IO Path"
                 value={socketIoPath}
                 onChange={(e) => setSocketIoPath(e.target.value)}
                 placeholder="/socket.io"
                 disabled={demoMode}
               />
-            </label>
-            <label>
-              Socket.IO Namespace
-              <input
+              <Input
+                label="Socket.IO Namespace"
                 value={socketIoNamespace}
                 onChange={(e) => setSocketIoNamespace(e.target.value)}
                 placeholder="/devices"
                 disabled={demoMode}
               />
-            </label>
-            <label>
-              Socket.IO Auth JSON
-              <textarea
+              <Textarea
+                label="Socket.IO Auth JSON"
                 rows={4}
                 value={socketIoAuth}
                 onChange={(e) => setSocketIoAuth(e.target.value)}
                 placeholder='{"serial":"dev-1","token":"secret"}'
                 disabled={demoMode}
               />
-            </label>
-          </>
-        )}
-        <div className="row">
-          <button
-            className={connState === 'DISCONNECTED' || connState === 'ERROR' ? 'btn-primary' : ''}
-            onClick={onConnect}
-            disabled={demoMode || connState === 'CONNECTING' || connState === 'CONNECTED'}
-          >
-            Connect
-          </button>
-          <button
-            onClick={onDisconnect}
-            disabled={connState === 'DISCONNECTED' && !demoMode}
-          >
-            Disconnect
-          </button>
-          <button
-            className={demoMode ? 'btn-active' : ''}
-            onClick={onToggleDemo}
-          >
-            {demoMode ? 'Live Mode' : 'Demo'}
-          </button>
-        </div>
-      </div>
-    </details>
+            </>
+          )}
+          <FormRow cols={3}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onConnect}
+              disabled={demoMode || connState === 'CONNECTING' || connState === 'CONNECTED'}
+            >
+              Connect
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onDisconnect}
+              disabled={connState === 'DISCONNECTED' && !demoMode}
+            >
+              Disconnect
+            </Button>
+            <Button
+              type="button"
+              variant={demoMode ? 'primary' : 'ghost'}
+              onClick={onToggleDemo}
+            >
+              {demoMode ? 'Live Mode' : 'Demo'}
+            </Button>
+          </FormRow>
+        </FormSection>
+      </CardBody>
+    </Card>
   );
 });
