@@ -57,16 +57,40 @@ html[data-theme="light"] .bg-grid {
   overflow: hidden;
 }
 
-.hero-card {
-  overflow: hidden;
-}
-
-.hero-actions {
+.app-navbar__actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+}
+
+.app-brand {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.app-brand__eyebrow {
+  color: rgb(0 243 255);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.app-brand__title {
+  color: rgb(226 232 240);
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+html[data-theme="light"] .app-brand__eyebrow {
+  color: rgb(0 151 167);
+}
+
+html[data-theme="light"] .app-brand__title {
+  color: rgb(15 23 42);
 }
 
 .layout {

@@ -2,12 +2,10 @@ import { useCallback } from 'react';
 import {
   Accordion,
   Badge,
-  Card,
-  CardBody,
   Container,
   Grid,
   GridItem,
-  PageHeader,
+  Navbar,
   ThemeProvider,
   ThemeToggle,
 } from '@azelenets/aegis-design-system';
@@ -147,20 +145,21 @@ const App = () => {
       <div className="app-root">
         <div className="bg-grid" />
         <Container size="full" className="shell">
-          <Card variant="primary" className="hero-card">
-            <CardBody>
-              <div className="hero-actions">
+          <Navbar
+            className="app-navbar pb-4 pt-5"
+            brand={(
+              <div className="app-brand">
+                <span className="app-brand__eyebrow">BlossomGrid Solutions</span>
+                <span className="app-brand__title">SIGNAL // TRACE</span>
+              </div>
+            )}
+            actions={(
+              <div className="app-navbar__actions">
                 <Badge label={connection.connState} variant={connection.connState === 'CONNECTED' ? 'success' : connection.connState === 'ERROR' ? 'alert' : connection.connState === 'CONNECTING' ? 'hazard' : 'ghost'} dot />
                 <ThemeToggle variant="pill" />
               </div>
-              <PageHeader
-                eyebrow="R&D // Experimental Lab"
-                titleMain="SIGNAL"
-                titleAccent="TRACE"
-                description="Browser-based WebSocket traffic inspector for real-time IoT debugging."
-              />
-            </CardBody>
-          </Card>
+            )}
+          />
 
           <Grid cols={1} colsLg={12} gap={4} className="layout">
             <GridItem span={12} spanLg={4} className="controls">
