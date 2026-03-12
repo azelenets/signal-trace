@@ -27,6 +27,8 @@ const MSG = (id: string, overrides: Partial<TraceMessage> = {}): TraceMessage =>
 const fileInputRef = { current: null } as React.RefObject<HTMLInputElement | null>;
 
 const defaultProps = {
+  allNamespaces: [],
+  activeNamespaces: new Set<string>(),
   filtered: [],
   metrics: METRICS,
   search: '',
@@ -44,6 +46,7 @@ const defaultProps = {
   onImport: vi.fn(),
   onReplay: vi.fn(),
   onStopReplay: vi.fn(),
+  onToggleNamespace: vi.fn(),
 };
 
 describe('TimelinePanel', () => {
@@ -62,11 +65,11 @@ describe('TimelinePanel', () => {
 
   it('shows metrics: total, IN, OUT, avg and peak RTT', () => {
     render(<TimelinePanel {...defaultProps} filtered={[MSG('1')]} />);
-    expect(screen.getByText('3')).toBeInTheDocument();  // total
-    expect(screen.getByText('2')).toBeInTheDocument();  // inCount
-    expect(screen.getByText('1')).toBeInTheDocument();  // outCount
-    expect(screen.getByText('15.5ms')).toBeInTheDocument();
-    expect(screen.getByText('30.0ms')).toBeInTheDocument();
+    expect(screen.getByText('Total 3')).toBeInTheDocument();
+    expect(screen.getByText('IN 2')).toBeInTheDocument();
+    expect(screen.getByText('OUT 1')).toBeInTheDocument();
+    expect(screen.getByText('AVG RTT 15.5ms')).toBeInTheDocument();
+    expect(screen.getByText('PEAK RTT 30.0ms')).toBeInTheDocument();
   });
 
   it('search input calls setSearch on change', () => {
@@ -77,6 +80,17 @@ describe('TimelinePanel', () => {
       { target: { value: 'heartbeat' } },
     );
     expect(setSearch).toHaveBeenCalledWith('heartbeat');
+  });
+
+  it('renders namespace filter in the timeline panel', () => {
+    render(
+      <TimelinePanel
+        {...defaultProps}
+        allNamespaces={['/telemetry', '/device']}
+      />,
+    );
+    expect(screen.getByText('Namespace Filter')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '/telemetry' })).toBeInTheDocument();
   });
 
   it('Clear button calls onClear', () => {

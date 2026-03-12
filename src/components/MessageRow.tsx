@@ -1,4 +1,12 @@
 import { memo } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  HStack,
+  Tag,
+} from '@azelenets/aegis-design-system';
 import type { TraceMessage } from '../types';
 import { safeJson } from '../lib/trace-utils';
 
@@ -35,13 +43,20 @@ export const MessageRow = memo(function MessageRow({
 }: MessageRowProps) {
   const payloadPreview =
     msg.payload.length > 190 ? `${msg.payload.slice(0, 190)}...` : msg.payload;
+  const directionVariant = msg.direction === 'in'
+    ? 'success'
+    : msg.direction === 'out'
+      ? 'hazard'
+      : 'primary';
 
   return (
     <article
       className={`row-item ${msg.direction}${isExpanded ? ' expanded' : ''}`}
       onClick={() => onToggle(msg.id)}
     >
-      <div className="row-main">
+      <Card variant="default" hoverable className="message-card">
+        <CardBody>
+          <div className="row-main">
         <div className="stamp">{fmtTime(msg.ts)}</div>
         <div className="meta">
           <strong>{msg.namespace}</strong>
@@ -49,27 +64,37 @@ export const MessageRow = memo(function MessageRow({
         </div>
         <div className="payload" title={msg.payload}>{payloadPreview}</div>
         <div className="overlay">
-          <span className={`dir-badge dir-${msg.direction}`}>{msg.direction.toUpperCase()}</span>
-          <span>{msg.bytes}B</span>
-          <span>{msg.protocol}</span>
+          <Badge
+            label={msg.direction.toUpperCase()}
+            variant={directionVariant}
+            className={`dir-badge dir-${msg.direction}`}
+          />
+          <Tag label={`${msg.bytes}B`} variant="ghost" />
+          <Tag label={msg.protocol} variant="ghost" />
           {msg.latencyMs !== undefined ? (
-            <span className="latency">RTT {msg.latencyMs}ms</span>
+            <Tag label={`RTT ${msg.latencyMs}ms`} variant="hazard" className="latency" />
           ) : (
-            <span>+{deltaMs}ms</span>
+            <Tag label={`+${deltaMs}ms`} variant="ghost" />
           )}
         </div>
-      </div>
-      {isExpanded && (
-        <div className="row-expand" onClick={(e) => e.stopPropagation()}>
-          <button
-            className="copy-btn"
-            onClick={() => onCopy(msg.id, msg.payload)}
-          >
-            {copiedId === msg.id ? 'Copied!' : 'Copy'}
-          </button>
-          <pre className="payload-full">{prettyPayload(msg.payload)}</pre>
-        </div>
-      )}
+          </div>
+          {isExpanded && (
+            <div className="row-expand" onClick={(e) => e.stopPropagation()}>
+              <HStack className="copy-row" align="center">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => onCopy(msg.id, msg.payload)}
+                >
+                  {copiedId === msg.id ? 'Copied!' : 'Copy'}
+                </Button>
+              </HStack>
+              <pre className="payload-full">{prettyPayload(msg.payload)}</pre>
+            </div>
+          )}
+        </CardBody>
+      </Card>
     </article>
   );
 });

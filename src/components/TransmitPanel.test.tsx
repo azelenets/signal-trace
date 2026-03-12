@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TransmitPanel } from './TransmitPanel';
 
 const defaultProps = {
+  connState: 'CONNECTED' as const,
   protocolMode: 'auto' as const,
+  onOpenSchemaBuilder: vi.fn(),
   onSend: vi.fn(),
   onSystemLog: vi.fn(),
 };
@@ -14,8 +16,16 @@ describe('TransmitPanel', () => {
 
   it('renders namespace and payload fields', () => {
     render(<TransmitPanel {...defaultProps} />);
+    expect(screen.getByRole('button', { name: 'Open Schema Builder' })).toBeInTheDocument();
     expect(screen.getByLabelText('Namespace')).toBeInTheDocument();
     expect(screen.getByLabelText('JSON Payload')).toBeInTheDocument();
+  });
+
+  it('clicking schema builder button calls onOpenSchemaBuilder', () => {
+    const onOpenSchemaBuilder = vi.fn();
+    render(<TransmitPanel {...defaultProps} onOpenSchemaBuilder={onOpenSchemaBuilder} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open Schema Builder' }));
+    expect(onOpenSchemaBuilder).toHaveBeenCalledOnce();
   });
 
   it('hides Socket.IO Event field when not in socketio mode', () => {
@@ -68,8 +78,7 @@ describe('TransmitPanel', () => {
     const user = userEvent.setup();
     render(<TransmitPanel {...defaultProps} onSend={onSend} />);
 
-    // Default is on (active class) — turn it off
-    await user.click(screen.getByRole('button', { name: 'Auto-refresh id/timestamp' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Auto-refresh id/timestamp' }));
     await user.click(screen.getByRole('button', { name: 'Send Frame' }));
     expect(onSend).toHaveBeenCalledWith(expect.objectContaining({ autoRefresh: false }));
   });
@@ -109,5 +118,10 @@ describe('TransmitPanel', () => {
     expect(onSend).toHaveBeenCalledWith(
       expect.objectContaining({ socketIoEvent: 'device_telemetry' }),
     );
+  });
+
+  it('disables Send Frame when connection is DISCONNECTED', () => {
+    render(<TransmitPanel {...defaultProps} connState="DISCONNECTED" />);
+    expect(screen.getByRole('button', { name: 'Send Frame' })).toBeDisabled();
   });
 });

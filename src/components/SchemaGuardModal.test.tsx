@@ -24,7 +24,10 @@ describe('SchemaGuardModal', () => {
 
   it('renders dialog with correct aria label', () => {
     render(<SchemaGuardModal {...defaultProps} />);
-    expect(screen.getByRole('dialog', { name: 'Schema Guard Builder' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Schema Guard Builder')).toBeInTheDocument();
+    expect(screen.getByText('Compose a frame and emit it through the current connection.')).toBeInTheDocument();
+    expect(screen.getByText('Leave both required fields and properties empty to disable validation.')).toBeInTheDocument();
   });
 
   it('renders one row per schema property', () => {
@@ -44,7 +47,9 @@ describe('SchemaGuardModal', () => {
   it('backdrop click calls onClose', () => {
     const onClose = vi.fn();
     render(<SchemaGuardModal {...defaultProps} onClose={onClose} />);
-    fireEvent.click(document.querySelector('.modal-backdrop')!);
+    const backdrop = document.body.querySelector('button[aria-hidden="true"]');
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -80,11 +85,14 @@ describe('SchemaGuardModal', () => {
   });
 
   it('type select change calls onUpdateType', () => {
+    const user = userEvent.setup();
     const onUpdateType = vi.fn();
     render(<SchemaGuardModal {...defaultProps} onUpdateType={onUpdateType} />);
-    const selects = screen.getAllByRole('combobox');
-    fireEvent.change(selects[0], { target: { value: 'number' } });
-    expect(onUpdateType).toHaveBeenCalledWith('s-0', 'number');
+    return user.click(screen.getAllByRole('combobox', { name: 'Type' })[0])
+      .then(() => user.click(screen.getByRole('option', { name: 'number' })))
+      .then(() => {
+        expect(onUpdateType).toHaveBeenCalledWith('s-0', 'number');
+      });
   });
 
   it('required checkbox change calls onUpdateRequired', () => {
