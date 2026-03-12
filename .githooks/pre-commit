@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -eu
+
+echo "Running lint..."
+npm run lint
+
+echo "Running typecheck..."
+npm run typecheck
