@@ -1,10 +1,12 @@
 {
   "name": "signal-trace",
+  "description": "Signal Trace is a browser-based WebSocket traffic inspector for real-time IoT debugging. It helps you connect to raw WebSocket or Socket.IO endpoints, inspect inbound and outbound frames, validate outgoing JSON against a lightweight schema, and replay or export captured traffic.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",

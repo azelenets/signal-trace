@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@azelenets/aegis-design-system/styles.css';
-import '@azelenets/aegis-design-system/fonts.css';
+import '@azelenets/aegis-design-system/globals.css';
 import App from './App';
 import './styles.css';
 
