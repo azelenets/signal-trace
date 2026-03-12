@@ -26,11 +26,6 @@ html[data-theme="light"] body {
   color: rgb(51 65 85);
 }
 
-.app-root {
-  min-height: 100dvh;
-  position: relative;
-}
-
 .bg-grid {
   position: fixed;
   inset: 0;

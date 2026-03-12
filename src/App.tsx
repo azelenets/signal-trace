@@ -81,10 +81,10 @@ const App = () => {
     const enrichedPayload =
       params.autoRefresh && parsedPayload
         ? {
-            ...parsedPayload,
-            ...(Object.hasOwn(parsedPayload, 'id') ? { id: generateMessageId() } : {}),
-            ...(Object.hasOwn(parsedPayload, 'timestamp') ? { timestamp: now } : {}),
-          }
+          ...parsedPayload,
+          ...(Object.hasOwn(parsedPayload, 'id') ? { id: generateMessageId() } : {}),
+          ...(Object.hasOwn(parsedPayload, 'timestamp') ? { timestamp: now } : {}),
+        }
         : parsedPayload;
 
     if (schema.parsedSchema.parseError) {
@@ -142,112 +142,112 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark">
-      <div className="app-root">
-        <div className="bg-grid" />
-        <Container size="full" className="shell">
-          <Navbar
-            className="app-navbar pb-4 pt-5"
-            brand={(
-              <div className="app-brand">
-                <span className="app-brand__eyebrow">BlossomGrid Solutions</span>
-                <span className="app-brand__title">SIGNAL // TRACE</span>
-              </div>
-            )}
-            actions={(
-              <div className="app-navbar__actions">
-                <Badge label={connection.connState} variant={connection.connState === 'CONNECTED' ? 'success' : connection.connState === 'ERROR' ? 'alert' : connection.connState === 'CONNECTING' ? 'hazard' : 'ghost'} dot />
-                <ThemeToggle variant="pill" />
-              </div>
-            )}
-          />
+      <div className="bg-grid"/>
+      <Container size="full" className="shell">
+        <Navbar
+          className="app-navbar pb-4 pt-5"
+          brand={(
+            <div className="app-brand">
+              <span className="app-brand__eyebrow">BlossomGrid Solutions</span>
+              <span className="app-brand__title">SIGNAL // TRACE</span>
+            </div>
+          )}
+          actions={(
+            <div className="app-navbar__actions">
+              <Badge label={connection.connState}
+                     variant={connection.connState === 'CONNECTED' ? 'success' : connection.connState === 'ERROR' ? 'alert' : connection.connState === 'CONNECTING' ? 'hazard' : 'ghost'}
+                     dot/>
+              <ThemeToggle variant="button"/>
+            </div>
+          )}
+        />
 
-          <Grid cols={1} colsLg={12} gap={4} className="layout">
-            <GridItem span={12} spanLg={4} className="controls">
-              <Accordion
-                multiple
-                defaultOpen={['connection', 'transmit']}
-                items={[
-                  {
-                    id: 'connection',
-                    trigger: 'Connection',
-                    content: (
-                      <ConnectionPanel
-                        connState={connection.connState}
-                        wsUrl={connection.wsUrl}
-                        setWsUrl={connection.setWsUrl}
-                        protocolMode={connection.protocolMode}
-                        setProtocolMode={connection.setProtocolMode}
-                        socketIoHandshake={connection.socketIoHandshake}
-                        setSocketIoHandshake={connection.setSocketIoHandshake}
-                        socketIoPath={connection.socketIoPath}
-                        setSocketIoPath={connection.setSocketIoPath}
-                        socketIoNamespace={connection.socketIoNamespace}
-                        setSocketIoNamespace={connection.setSocketIoNamespace}
-                        socketIoAuth={connection.socketIoAuth}
-                        setSocketIoAuth={connection.setSocketIoAuth}
-                        demoMode={timeline.demoMode}
-                        onConnect={handleConnect}
-                        onDisconnect={handleDisconnect}
-                        onToggleDemo={handleToggleDemo}
-                      />
-                    ),
-                  },
-                  {
-                    id: 'transmit',
-                    trigger: 'Transmit',
-                    content: (
-                      <TransmitPanel
-                        connState={connection.connState}
-                        protocolMode={connection.protocolMode}
-                        onOpenSchemaBuilder={() => schema.setSchemaModalOpen(true)}
-                        onSend={handleSend}
-                        onSystemLog={timeline.appendSystem}
-                      />
-                    ),
-                  },
-                ]}
-              />
-            </GridItem>
+        <Grid cols={1} colsLg={12} gap={4} className="layout">
+          <GridItem span={12} spanLg={4} className="controls">
+            <Accordion
+              multiple
+              defaultOpen={['connection', 'transmit']}
+              items={[
+                {
+                  id: 'connection',
+                  trigger: 'Connection',
+                  content: (
+                    <ConnectionPanel
+                      connState={connection.connState}
+                      wsUrl={connection.wsUrl}
+                      setWsUrl={connection.setWsUrl}
+                      protocolMode={connection.protocolMode}
+                      setProtocolMode={connection.setProtocolMode}
+                      socketIoHandshake={connection.socketIoHandshake}
+                      setSocketIoHandshake={connection.setSocketIoHandshake}
+                      socketIoPath={connection.socketIoPath}
+                      setSocketIoPath={connection.setSocketIoPath}
+                      socketIoNamespace={connection.socketIoNamespace}
+                      setSocketIoNamespace={connection.setSocketIoNamespace}
+                      socketIoAuth={connection.socketIoAuth}
+                      setSocketIoAuth={connection.setSocketIoAuth}
+                      demoMode={timeline.demoMode}
+                      onConnect={handleConnect}
+                      onDisconnect={handleDisconnect}
+                      onToggleDemo={handleToggleDemo}
+                    />
+                  ),
+                },
+                {
+                  id: 'transmit',
+                  trigger: 'Transmit',
+                  content: (
+                    <TransmitPanel
+                      connState={connection.connState}
+                      protocolMode={connection.protocolMode}
+                      onOpenSchemaBuilder={() => schema.setSchemaModalOpen(true)}
+                      onSend={handleSend}
+                      onSystemLog={timeline.appendSystem}
+                    />
+                  ),
+                },
+              ]}
+            />
+          </GridItem>
 
-            <GridItem span={12} spanLg={8}>
-              <TimelinePanel
-                allNamespaces={timeline.allNamespaces}
-                activeNamespaces={timeline.activeNamespaces}
-                filtered={timeline.filtered}
-                metrics={timeline.metrics}
-                search={timeline.search}
-                setSearch={timeline.setSearch}
-                expandedId={timeline.expandedId}
-                copiedId={timeline.copiedId}
-                replaySpeed={timeline.replaySpeed}
-                setReplaySpeed={timeline.setReplaySpeed}
-                fileInputRef={timeline.fileInputRef}
-                onToggleRow={timeline.toggleRow}
-                onCopyPayload={timeline.copyPayload}
-                onClear={handleClear}
-                onExportJson={timeline.exportJson}
-                onExportNdjson={timeline.exportNdjson}
-                onImport={timeline.onImportTimeline}
-                onReplay={timeline.replayTimeline}
-                onStopReplay={timeline.stopReplay}
-                onToggleNamespace={timeline.toggleNamespace}
-              />
-            </GridItem>
-          </Grid>
-        </Container>
+          <GridItem span={12} spanLg={8}>
+            <TimelinePanel
+              allNamespaces={timeline.allNamespaces}
+              activeNamespaces={timeline.activeNamespaces}
+              filtered={timeline.filtered}
+              metrics={timeline.metrics}
+              search={timeline.search}
+              setSearch={timeline.setSearch}
+              expandedId={timeline.expandedId}
+              copiedId={timeline.copiedId}
+              replaySpeed={timeline.replaySpeed}
+              setReplaySpeed={timeline.setReplaySpeed}
+              fileInputRef={timeline.fileInputRef}
+              onToggleRow={timeline.toggleRow}
+              onCopyPayload={timeline.copyPayload}
+              onClear={handleClear}
+              onExportJson={timeline.exportJson}
+              onExportNdjson={timeline.exportNdjson}
+              onImport={timeline.onImportTimeline}
+              onReplay={timeline.replayTimeline}
+              onStopReplay={timeline.stopReplay}
+              onToggleNamespace={timeline.toggleNamespace}
+            />
+          </GridItem>
+        </Grid>
+      </Container>
 
-        {schema.schemaModalOpen && (
-          <SchemaGuardModal
-            schemaProperties={schema.schemaProperties}
-            onClose={() => schema.setSchemaModalOpen(false)}
-            onAdd={schema.addSchemaProperty}
-            onRemove={schema.removeSchemaProperty}
-            onUpdateField={schema.updateSchemaPropertyField}
-            onUpdateType={schema.updateSchemaPropertyType}
-            onUpdateRequired={schema.updateSchemaPropertyRequired}
-          />
-        )}
-      </div>
+      {schema.schemaModalOpen && (
+        <SchemaGuardModal
+          schemaProperties={schema.schemaProperties}
+          onClose={() => schema.setSchemaModalOpen(false)}
+          onAdd={schema.addSchemaProperty}
+          onRemove={schema.removeSchemaProperty}
+          onUpdateField={schema.updateSchemaPropertyField}
+          onUpdateType={schema.updateSchemaPropertyType}
+          onUpdateRequired={schema.updateSchemaPropertyRequired}
+        />
+      )}
     </ThemeProvider>
   );
 };
