@@ -47,7 +47,9 @@ describe('SchemaGuardModal', () => {
   it('backdrop click calls onClose', () => {
     const onClose = vi.fn();
     render(<SchemaGuardModal {...defaultProps} onClose={onClose} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Close dialog backdrop' }));
+    const backdrop = document.body.querySelector('button[aria-hidden="true"]');
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
